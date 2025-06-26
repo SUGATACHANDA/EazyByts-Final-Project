@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axiosConfig';
-import CreateEventForm from '../components/admin/CreateEventForm';
-import AdminEventList from '../components/admin/AdminEventList';
+import CreateEventForm from '../pages/admin/CreateEventForm';
+import AdminEventList from '../pages/admin/AdminEventList';
 import Spinner from '../components/utils/Spinner';
 
 const AdminDashboardPage = () => {

@@ -133,24 +133,75 @@ const deleteEvent = async (req, res) => {
 };
 
 const updateEvent = async (req, res) => {
-    const { name, description, date, location } = req.body;
+    // Now accepting price and totalTickets in the request body
+    const { name, description, date, location, price, totalTickets } = req.body;
+
     try {
         const event = await Event.findById(req.params.id);
-        if (event) {
-            event.name = name || event.name;
-            event.description = description || event.description;
-            event.date = date || event.date;
-            event.location = location || event.location;
 
-            const updatedEvent = await event.save();
-            res.json(updatedEvent);
-        } else {
-            res.status(404).json({ message: 'Event not found' });
+        if (!event) {
+            return res.status(404).json({ message: 'Event not found' });
         }
+
+        let newPaddlePriceId = event.paddlePriceId;
+        if (price && price !== event.price) {
+            console.log(`Price changed for event ${event.name}. Old: ${event.price}, New: ${price}. Updating Paddle Price.`);
+
+            // 1. Get the Product ID from the old Price ID
+            const oldPriceDetails = await paddleApi.get(`/prices/${event.paddlePriceId}`);
+            const paddleProductId = oldPriceDetails.data.data.product_id;
+
+            // 2. Archive the old price (deactivates it)
+            await paddleApi.patch(`/prices/${event.paddlePriceId}`, { status: 'archived' });
+
+            // 3. Create a new price for the same product
+            const newPriceResponse = await paddleApi.post('/prices', {
+                product_id: paddleProductId,
+                description: name || event.name,
+                unit_price: {
+                    amount: (price * 100).toString(),
+                    currency_code: 'USD'
+                }
+            });
+            newPaddlePriceId = newPriceResponse.data.data.id;
+            console.log(`New Paddle Price created: ${newPaddlePriceId}`);
+        }
+
+
+        // --- Update Informational Fields ---
+        event.name = name || event.name;
+        event.description = description || event.description;
+        event.date = date || event.date;
+        event.location = location || event.location;
+        event.price = price || event.price; // Update price in our DB
+        event.paddlePriceId = newPaddlePriceId; // Update with the new price ID if it changed
+
+
+        // --- Handle Ticket Count Update (if totalTickets has changed) ---
+        if (totalTickets && totalTickets !== event.totalTickets) {
+            const ticketsSold = event.totalTickets - event.ticketsRemaining;
+
+            // The new remaining count is the new total minus tickets already sold.
+            // We must ensure this doesn't result in a negative number.
+            const newTicketsRemaining = totalTickets - ticketsSold;
+
+            if (newTicketsRemaining < 0) {
+                return res.status(400).json({ message: 'Update failed: New total ticket count cannot be less than the number of tickets already sold.' });
+            }
+
+            event.totalTickets = totalTickets;
+            event.ticketsRemaining = newTicketsRemaining;
+        }
+
+        const updatedEvent = await event.save();
+        res.json(updatedEvent);
+
     } catch (error) {
-        res.status(400).json({ message: 'Event update failed', error: error.message });
+        console.error("Event Update Error:", error.response ? error.response.data : error.message);
+        res.status(400).json({ message: 'Event update failed.', error: error.message });
     }
 };
+
 
 module.exports = {
     createEvent,
