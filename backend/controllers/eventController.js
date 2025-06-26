@@ -27,32 +27,47 @@ const paddleApi = axios.create({
  * @query   ?page=<num> - For public pagination.
  */
 const getEvents = async (req, res) => {
+    // This header is crucial to prevent the browser from showing old, cached data.
     res.setHeader('Cache-Control', 'no-store');
 
     try {
         const isAdminView = req.query.view === 'admin';
 
         if (isAdminView) {
-            // ADMIN LOGIC: Fetch all events, sorted by newest created.
+            // --- ADMIN LOGIC ---
+            // The admin needs to see all events, past and future, to manage them.
+            // Therefore, we use an empty query object `{}` which means "no filter".
             console.log("Serving request for Admin View (all events)");
             const events = await Event.find({}).sort({ createdAt: -1 });
             return res.json({ events });
 
         } else {
-            // PUBLIC LOGIC: Fetch paginated, upcoming events.
+            // --- PUBLIC LOGIC ---
+            // Public users should only see events they can still attend.
             console.log(`Serving request for Public View (page ${req.query.page || 1})`);
-            const pageSize = 3;
+            const pageSize = 6;
             const page = Number(req.query.page) || 1;
 
+            // --- THIS IS THE "NOT EXPIRED" FILTER ---
+            // It creates a query to find all events where the `date` field is
+            // greater than or equal to the very beginning (midnight) of the current day.
             const query = { date: { $gte: new Date().setHours(0, 0, 0, 0) } };
+
+            // First, count how many documents match this "not expired" filter.
             const count = await Event.countDocuments(query);
 
+            // Then, find the actual documents using the same filter, with sorting and pagination.
             const events = await Event.find(query)
-                .sort({ date: 'asc' })
+                .sort({ date: 'asc' }) // Show soonest upcoming events first
                 .limit(pageSize)
                 .skip(pageSize * (page - 1));
 
-            return res.json({ events, page, pages: Math.ceil(count / pageSize) });
+            // The response will ONLY contain future events.
+            return res.json({
+                events,
+                page,
+                pages: Math.ceil(count / pageSize),
+            });
         }
     } catch (error) {
         console.error("Error in getEvents controller:", error);
