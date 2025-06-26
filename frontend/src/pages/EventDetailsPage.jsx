@@ -29,6 +29,7 @@ const EventDetailsPage = () => {
             setError('');
             try {
                 const { data } = await api.get(`/events/${eventId}`);
+                document.title = `${data.name} | Eventive`
                 setEvent(data);
             } catch (err) {
                 console.error("Failed to fetch event details:", err);
@@ -128,15 +129,41 @@ const EventDetailsPage = () => {
                         {!isSoldOut && (
                             <div className="flex items-center gap-4 mt-4">
                                 <div>
-                                    <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">Quantity</label>
+                                    <label
+                                        htmlFor="quantity"
+                                        className="block text-sm font-medium text-gray-700"
+                                    >
+                                        Quantity
+                                    </label>
                                     <input
                                         id="quantity"
                                         type="number"
                                         value={quantity}
-                                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value)))}
+                                        onChange={(e) => {
+                                            let newQuantity = e.target.value;
+
+                                            if (newQuantity === '') {
+                                                setQuantity('');
+                                                return;
+                                            }
+
+                                            newQuantity = parseInt(newQuantity, 10);
+                                            if (isNaN(newQuantity)) newQuantity = 1;
+                                            newQuantity = Math.max(1, newQuantity);
+
+                                            if (event?.ticketsRemaining) {
+                                                newQuantity = Math.min(newQuantity, event.ticketsRemaining);
+                                            }
+
+                                            setQuantity(newQuantity);
+                                        }}
                                         min="1"
-                                        max={event.ticketsRemaining}
-                                        className="input-field w-24 text-center"
+                                        max={event?.ticketsRemaining}
+                                        placeholder="1"
+
+                                        // --- STYLING CHANGES ARE HERE ---
+                                        className="input-field no-arrows w-24 text-center text-lg font-semibold"
+
                                     />
                                 </div>
                                 <button onClick={handleBuyTickets} className="btn-inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4  font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex-grow h-14 text-lg">
