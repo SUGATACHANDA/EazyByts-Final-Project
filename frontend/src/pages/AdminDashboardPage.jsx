@@ -12,8 +12,10 @@ const AdminDashboardPage = () => {
     const fetchEvents = async () => {
         setLoading(true);
         try {
-            // Pass `all=true` to get all events for the admin view, ignoring pagination
-            const { data } = await api.get('/events?all=true');
+            // --- THE ONLY CHANGE NEEDED ON THE FRONTEND ---
+            // Point this to the new, dedicated admin endpoint.
+            const { data } = await api.get('/events/admin/all');
+
             setEvents(data.events);
         } catch (error) {
             console.error('Failed to fetch events for admin dashboard', error);
@@ -21,6 +23,7 @@ const AdminDashboardPage = () => {
             setLoading(false);
         }
     };
+
 
     useEffect(() => {
         fetchEvents();

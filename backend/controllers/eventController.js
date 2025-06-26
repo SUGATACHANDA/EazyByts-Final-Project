@@ -94,56 +94,54 @@ const createEvent = async (req, res) => {
 // @desc    Get events with pagination
 // @route   GET /api/events
 // @access  Public
-const getEvents = async (req, res) => {
-    // Set anti-caching headers for all requests to this endpoint.
+const getPublicEvents = async (req, res) => {
+    // Set anti-caching headers.
     res.setHeader('Cache-Control', 'no-store');
 
     try {
-        // --- THE CRITICAL FIX ---
-        // Be very specific: the query parameter 'all' must be the string 'true'.
-        // Any other value (or its absence) will trigger the public logic.
-        if (req.query.all === 'true') {
+        const pageSize = 6;
+        const page = Number(req.query.page) || 1;
 
-            // --- ADMIN LOGIC ---
-            // Fetch all documents. No pagination needed.
-            // Sort by 'createdAt: -1' so the most recently created events appear first for the admin.
-            console.log("Admin request: Fetching all events."); // Add a log for debugging
-            const events = await Event.find({}).sort({ createdAt: -1 });
+        // Filter for events from the beginning of today onwards.
+        const query = { date: { $gte: new Date().setHours(0, 0, 0, 0) } };
 
-            // Send back the full list in the expected shape for the admin dashboard.
-            return res.json({ events });
+        const count = await Event.countDocuments(query);
+        const events = await Event.find(query)
+            .sort({ date: 'asc' }) // Sort by soonest event date
+            .limit(pageSize)
+            .skip(pageSize * (page - 1));
 
-        } else {
+        // This response shape is now GUARANTEED for this route.
+        res.json({
+            events,
+            page,
+            pages: Math.ceil(count / pageSize),
+        });
 
-            // --- PUBLIC PAGINATION LOGIC ---
-            console.log("Public request: Fetching paginated events."); // Add a log for debugging
-            const pageSize = 6;
-            const page = Number(req.query.page) || 1;
-
-            // Filter for events from the beginning of today onwards.
-            const query = { date: { $gte: new Date().setHours(0, 0, 0, 0) } };
-
-            const count = await Event.countDocuments(query);
-            const events = await Event.find(query)
-                .sort({ date: 'asc' }) // Sort by soonest event date for users
-                .limit(pageSize)
-                .skip(pageSize * (page - 1));
-
-            // Send back the events plus pagination data.
-            return res.json({
-                events,
-                page,
-                pages: Math.ceil(count / pageSize),
-            });
-        }
     } catch (error) {
-        console.error("Error fetching events:", error);
-        return res.status(500).json({ message: 'Server error while fetching events' });
+        console.error("Error fetching public events:", error);
+        res.status(500).json({ message: 'Server error while fetching events' });
     }
 };
-// @desc    Get single event by ID
-// @route   GET /api/events/:id
-// @access  Public
+
+const getAllEventsForAdmin = async (req, res) => {
+    // Set anti-caching headers.
+    res.setHeader('Cache-Control', 'no-store');
+
+    try {
+        // Fetch all documents. No filters, no pagination.
+        // Sort by creation date so the newest events admin created appear at the top.
+        const events = await Event.find({}).sort({ createdAt: -1 });
+
+        // This response shape is guaranteed for this route.
+        res.json({ events });
+
+    } catch (error) {
+        console.error("Error fetching admin events:", error);
+        res.status(500).json({ message: 'Server error while fetching events for admin' });
+    }
+};
+
 const getEventById = async (req, res) => {
     const event = await Event.findById(req.params.id);
     if (event) {
@@ -241,7 +239,8 @@ const updateEvent = async (req, res) => {
 
 module.exports = {
     createEvent,
-    getEvents,
+    getAllEventsForAdmin,
+    getPublicEvents,
     getEventById,
     deleteEvent,
     getCloudinarySignature,
