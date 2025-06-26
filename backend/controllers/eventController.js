@@ -99,20 +99,24 @@ const getEvents = async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
 
     try {
-        // Check if the admin is requesting all events.
-        const isRequestingAll = req.query.all === 'true';
+        // --- THE CRITICAL FIX ---
+        // Be very specific: the query parameter 'all' must be the string 'true'.
+        // Any other value (or its absence) will trigger the public logic.
+        if (req.query.all === 'true') {
 
-        if (isRequestingAll) {
             // --- ADMIN LOGIC ---
             // Fetch all documents. No pagination needed.
-            // Sort by 'createdAt: -1' so the most recently created events appear first.
+            // Sort by 'createdAt: -1' so the most recently created events appear first for the admin.
+            console.log("Admin request: Fetching all events."); // Add a log for debugging
             const events = await Event.find({}).sort({ createdAt: -1 });
 
-            // Send back the full list. No page/pages info needed.
-            res.json({ events });
+            // Send back the full list in the expected shape for the admin dashboard.
+            return res.json({ events });
 
         } else {
+
             // --- PUBLIC PAGINATION LOGIC ---
+            console.log("Public request: Fetching paginated events."); // Add a log for debugging
             const pageSize = 6;
             const page = Number(req.query.page) || 1;
 
@@ -121,22 +125,22 @@ const getEvents = async (req, res) => {
 
             const count = await Event.countDocuments(query);
             const events = await Event.find(query)
-                .sort({ date: 'asc' }) // Sort by soonest event date
+                .sort({ date: 'asc' }) // Sort by soonest event date for users
                 .limit(pageSize)
                 .skip(pageSize * (page - 1));
 
-            res.json({
+            // Send back the events plus pagination data.
+            return res.json({
                 events,
                 page,
-                pages: Math.ceil(count / pageSize), // Include pagination data
+                pages: Math.ceil(count / pageSize),
             });
         }
     } catch (error) {
         console.error("Error fetching events:", error);
-        res.status(500).json({ message: 'Server error while fetching events' });
+        return res.status(500).json({ message: 'Server error while fetching events' });
     }
 };
-
 // @desc    Get single event by ID
 // @route   GET /api/events/:id
 // @access  Public
