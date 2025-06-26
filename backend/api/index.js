@@ -29,6 +29,9 @@ app.get('/api/config', (req, res) => {
         paddleClientToken: process.env.PADDLE_CLIENT_TOKEN,
     });
 });
+app.get('/', (req, res) => {
+    res.send('Eventify Tracker');
+});
 app.use('/api/auth', require('../routes/authRoutes'));
 app.use('/api/events', require('../routes/eventRoutes'));
 app.use('/api/bookings', require('../routes/bookingRoutes'));
