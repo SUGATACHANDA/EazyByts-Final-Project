@@ -9,14 +9,13 @@ const AdminDashboardPage = () => {
     const [loading, setLoading] = useState(true);
     const [selectedEvent, setSelectedEvent] = useState(null);
 
-    const fetchEvents = async () => {
+    const fetchAdminEvents = async () => {
         setLoading(true);
         try {
-            // --- THE ONLY CHANGE NEEDED ON THE FRONTEND ---
-            // Point this to the new, dedicated admin endpoint.
-            const { data } = await api.get('/events/admin/all');
-
-            setEvents(data.events);
+            // --- THE CHANGE IS HERE ---
+            // Call the unified endpoint with the `view=admin` query parameter.
+            const { data } = await api.get('/events?view=admin');
+            setEvents(data.events || []);
         } catch (error) {
             console.error('Failed to fetch events for admin dashboard', error);
         } finally {
@@ -24,41 +23,29 @@ const AdminDashboardPage = () => {
         }
     };
 
-
     useEffect(() => {
-        fetchEvents();
+        fetchAdminEvents();
     }, []);
 
-    // Handler to set the event to be edited in the form
-    const handleEditEvent = (event) => {
-        setSelectedEvent(event);
-    };
-
-    // Handler to clear the form (exit edit mode)
-    const handleCancelEdit = () => {
-        setSelectedEvent(null);
-    };
-
-    // This function is called on successful creation or update
+    const handleEditEvent = (event) => setSelectedEvent(event);
+    const handleCancelEdit = () => setSelectedEvent(null);
     const handleSuccess = () => {
-        fetchEvents();       // Re-fetch the events to show the updated list
-        setSelectedEvent(null); // Clear the form by exiting edit mode
+        fetchAdminEvents();
+        setSelectedEvent(null);
     };
 
     return (
         <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-8 border-b pb-4">Admin Dashboard</h1>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Form Column */}
                 <div className="lg:col-span-1">
                     <CreateEventForm
-                        key={selectedEvent ? selectedEvent._id : 'create'} // A key helps React properly reset the form state
+                        key={selectedEvent ? selectedEvent._id : 'create'}
                         eventToEdit={selectedEvent}
                         onSuccess={handleSuccess}
                         onCancelEdit={handleCancelEdit}
                     />
                 </div>
-                {/* Event List Column */}
                 <div className="lg:col-span-2">
                     <h2 className="text-2xl font-bold mb-4">Manage Events</h2>
                     {loading ? (
@@ -67,7 +54,7 @@ const AdminDashboardPage = () => {
                         <AdminEventList
                             events={events}
                             onEdit={handleEditEvent}
-                            onEventDeleted={fetchEvents} // Simply re-fetch the list on delete
+                            onEventDeleted={fetchAdminEvents}
                         />
                     )}
                 </div>
