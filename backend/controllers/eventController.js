@@ -95,14 +95,46 @@ const createEvent = async (req, res) => {
 // @route   GET /api/events
 // @access  Public
 const getEvents = async (req, res) => {
-    const pageSize = 3;
-    const page = Number(req.query.page) || 1;
-    const count = await Event.countDocuments({ date: { $gte: new Date() } }); // Only future events
-    const events = await Event.find({ date: { $gte: new Date() } })
-        .sort({ date: "asc" })
-        .limit(pageSize)
-        .skip(pageSize * (page - 1));
-    res.json({ events, page, pages: Math.ceil(count / pageSize) });
+    // Set anti-caching headers for all requests to this endpoint.
+    res.setHeader('Cache-Control', 'no-store');
+
+    try {
+        // Check if the admin is requesting all events.
+        const isRequestingAll = req.query.all === 'true';
+
+        if (isRequestingAll) {
+            // --- ADMIN LOGIC ---
+            // Fetch all documents. No pagination needed.
+            // Sort by 'createdAt: -1' so the most recently created events appear first.
+            const events = await Event.find({}).sort({ createdAt: -1 });
+
+            // Send back the full list. No page/pages info needed.
+            res.json({ events });
+
+        } else {
+            // --- PUBLIC PAGINATION LOGIC ---
+            const pageSize = 6;
+            const page = Number(req.query.page) || 1;
+
+            // Filter for events from the beginning of today onwards.
+            const query = { date: { $gte: new Date().setHours(0, 0, 0, 0) } };
+
+            const count = await Event.countDocuments(query);
+            const events = await Event.find(query)
+                .sort({ date: 'asc' }) // Sort by soonest event date
+                .limit(pageSize)
+                .skip(pageSize * (page - 1));
+
+            res.json({
+                events,
+                page,
+                pages: Math.ceil(count / pageSize), // Include pagination data
+            });
+        }
+    } catch (error) {
+        console.error("Error fetching events:", error);
+        res.status(500).json({ message: 'Server error while fetching events' });
+    }
 };
 
 // @desc    Get single event by ID
