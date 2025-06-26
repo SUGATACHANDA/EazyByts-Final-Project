@@ -20,6 +20,8 @@ const EventDetailsPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
+    const success_url = import.meta.env.VITE_SUCCESS_APP_FRONTEND_URL
+
     useEffect(() => {
         // Function to fetch the event data from the backend
         const fetchEvent = async () => {
@@ -41,6 +43,7 @@ const EventDetailsPage = () => {
 
     const paddle = usePaddle()// Re-run this effect if the eventId in the URL changes
 
+
     const handleBuyTickets = () => {
         // 1. Check if user is logged in. If not, redirect to login page,
         //    but remember where they came from so we can send them back here after login.
@@ -57,22 +60,25 @@ const EventDetailsPage = () => {
 
         // 3. Initiate the Paddle Checkout
         paddle.Checkout.open({
-            // The structure of the object passed in remains the same.
-            // The newer method correctly understands the 'items' array.
+
             items: [{
                 priceId: event.paddlePriceId,
                 quantity: quantity
             }],
+
+            settings: {
+                displayMode: "overlay",
+                theme: "light",
+                locale: "en",
+                successUrl: `${success_url}`
+            },
+
             email: user.email,
             customData: {
                 eventId: event._id,
                 userId: user._id,
                 quantity: quantity.toString(),
             },
-            // Note: The new checkout does not use successCallback.
-            // The redirect happens automatically based on the 'return_url'
-            // you can configure in your Paddle Dashboard settings.
-            // Alternatively, we can use the `onCheckout` event listeners.
         });
     };
 
@@ -98,7 +104,7 @@ const EventDetailsPage = () => {
             <div className="md:flex">
                 {/* Left Side: Image */}
                 <div className="md:w-1/2">
-                    <img className="h-64 w-full object-cover md:h-full" src={event.image} alt={event.name} />
+                    <img className="h-64 w-full object-cover md:h-full" src={event.imageUrl} alt={event.name} />
                 </div>
 
                 {/* Right Side: Details and Actions */}

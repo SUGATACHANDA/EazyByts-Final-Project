@@ -8,7 +8,7 @@ const EventCard = ({ event }) => {
     return (
         <Link to={`/event/${event._id}`} className="block group">
             <div className="bg-white rounded-lg shadow-lg overflow-hidden transition-transform duration-300 group-hover:scale-105 group-hover:shadow-xl flex flex-col h-full">
-                <img className="h-48 w-full object-cover" src={event.image} alt={event.name} />
+                <img className="h-48 w-full object-cover" src={event.imageUrl} alt={event.name} />
                 <div className="p-4 flex flex-col flex-grow">
                     <p className="text-sm font-semibold text-indigo-600">{formattedDate} • {event.location}</p>
                     <h3 className="text-xl font-bold mt-2 text-gray-800">{event.name}</h3>

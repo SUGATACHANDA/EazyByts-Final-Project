@@ -1,22 +1,22 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axiosConfig';
-import CreateEventForm from '../pages/admin/CreateEventForm';
-import AdminEventList from '../pages/admin/AdminEventList';
+import CreateEventForm from '../components/admin/CreateEventForm';
+import AdminEventList from '../components/admin/AdminEventList';
 import Spinner from '../components/utils/Spinner';
 
 const AdminDashboardPage = () => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedEvent, setSelectedEvent] = useState(null);
 
     const fetchEvents = async () => {
         setLoading(true);
         try {
-            // Note: the backend 'getEvents' should return all events if an admin is asking.
-            // A simple way is to add a query param: GET /api/events?all=true
-            const { data } = await api.get('/events?limit=1000'); // Fetch a large number for admin view
+            // Pass `all=true` to get all events for the admin view, ignoring pagination
+            const { data } = await api.get('/events?all=true');
             setEvents(data.events);
         } catch (error) {
-            console.error('Failed to fetch events', error);
+            console.error('Failed to fetch events for admin dashboard', error);
         } finally {
             setLoading(false);
         }
@@ -26,16 +26,47 @@ const AdminDashboardPage = () => {
         fetchEvents();
     }, []);
 
+    // Handler to set the event to be edited in the form
+    const handleEditEvent = (event) => {
+        setSelectedEvent(event);
+    };
+
+    // Handler to clear the form (exit edit mode)
+    const handleCancelEdit = () => {
+        setSelectedEvent(null);
+    };
+
+    // This function is called on successful creation or update
+    const handleSuccess = () => {
+        fetchEvents();       // Re-fetch the events to show the updated list
+        setSelectedEvent(null); // Clear the form by exiting edit mode
+    };
+
     return (
         <div>
-            <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-8 border-b pb-4">Admin Dashboard</h1>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Form Column */}
                 <div className="lg:col-span-1">
-                    <CreateEventForm onEventCreated={fetchEvents} />
+                    <CreateEventForm
+                        key={selectedEvent ? selectedEvent._id : 'create'} // A key helps React properly reset the form state
+                        eventToEdit={selectedEvent}
+                        onSuccess={handleSuccess}
+                        onCancelEdit={handleCancelEdit}
+                    />
                 </div>
+                {/* Event List Column */}
                 <div className="lg:col-span-2">
                     <h2 className="text-2xl font-bold mb-4">Manage Events</h2>
-                    {loading ? <Spinner /> : <AdminEventList events={events} onEventDeleted={fetchEvents} />}
+                    {loading ? (
+                        <Spinner />
+                    ) : (
+                        <AdminEventList
+                            events={events}
+                            onEdit={handleEditEvent}
+                            onEventDeleted={fetchEvents} // Simply re-fetch the list on delete
+                        />
+                    )}
                 </div>
             </div>
         </div>

@@ -132,10 +132,31 @@ const deleteEvent = async (req, res) => {
     }
 };
 
+const updateEvent = async (req, res) => {
+    const { name, description, date, location } = req.body;
+    try {
+        const event = await Event.findById(req.params.id);
+        if (event) {
+            event.name = name || event.name;
+            event.description = description || event.description;
+            event.date = date || event.date;
+            event.location = location || event.location;
+
+            const updatedEvent = await event.save();
+            res.json(updatedEvent);
+        } else {
+            res.status(404).json({ message: 'Event not found' });
+        }
+    } catch (error) {
+        res.status(400).json({ message: 'Event update failed', error: error.message });
+    }
+};
+
 module.exports = {
     createEvent,
     getEvents,
     getEventById,
     deleteEvent,
     getCloudinarySignature,
+    updateEvent
 };
