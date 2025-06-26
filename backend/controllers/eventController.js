@@ -25,7 +25,7 @@ const paddleApi = axios.create({
 const getCloudinarySignature = (req, res) => {
     const timestamp = Math.round(new Date().getTime() / 1000);
     const signature = cloudinary.utils.api_sign_request(
-        { timestamp: timestamp },
+        { timestamp: timestamp, folder: 'eventive_events', },
         process.env.CLOUDINARY_API_SECRET
     );
     res.json({
