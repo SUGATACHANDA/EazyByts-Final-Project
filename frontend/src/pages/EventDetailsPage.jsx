@@ -70,7 +70,7 @@ const EventDetailsPage = () => {
                 displayMode: "overlay",
                 theme: "light",
                 locale: "en",
-                successUrl: `${success_url}`,
+                successUrl: `${success_url}/${eventId}/payment_status=success`,
             },
 
             email: user.email,
