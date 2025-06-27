@@ -10,6 +10,8 @@ const HomePage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
+    document.title = "Eventive | One place sloution for all Events"
+
     useEffect(() => {
         const fetchEvents = async () => {
             if (page === 1) setLoading(true); // Full screen spinner only on first load

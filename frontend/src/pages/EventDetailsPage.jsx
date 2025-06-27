@@ -71,7 +71,7 @@ const EventDetailsPage = () => {
                 displayMode: "overlay",
                 theme: "light",
                 locale: "en",
-                successUrl: `${success_url}`
+                successUrl: `${success_url}`,
             },
 
             email: user.email,
@@ -162,7 +162,7 @@ const EventDetailsPage = () => {
                                         placeholder="1"
 
                                         // --- STYLING CHANGES ARE HERE ---
-                                        className="input-field no-arrows w-24 text-center text-lg font-semibold"
+                                        className="input-field no-arrows text-center font-semibold"
 
                                     />
                                 </div>

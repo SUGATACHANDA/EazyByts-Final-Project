@@ -36,7 +36,7 @@ body {
 @layer components {
     /* Base styles for all text input fields, textareas, etc. */
     .input-field {
-        @apply block w-full p-2 rounded-md border-gray-300 shadow-sm  sm:text-sm;
+        @apply block w-full rounded-md border-gray-300 border p-2 shadow-sm outline-none focus:border-blue-500  sm:text-sm;
     }
 
     /* Primary action button (e.g., Sign Up, Buy Tickets) */

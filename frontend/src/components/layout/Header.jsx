@@ -24,7 +24,7 @@ const Header = () => {
                             {user ? (
                                 <>
                                     <span className="text-gray-700">Hi, {user.name}!</span>
-                                    <Link to="/my-bookings" className="text-gray-700 hover:bg-gray-200 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">My Bookings</Link>
+                                    <Link prefetch='render' to="/my-bookings" className="text-gray-700 hover:bg-gray-200 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">My Bookings</Link>
                                     {user.isAdmin && (
                                         <Link to="/admin" className="text-gray-700 hover:bg-gray-200 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Admin Dashboard</Link>
                                     )}

@@ -61,7 +61,7 @@ const LoginPage = () => {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            className="p-2 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm mt-1"
+                            className="input-field mt-1"
                         />
                     </div>
                     <div>
@@ -77,7 +77,7 @@ const LoginPage = () => {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
-                            className=" w-full p-2 rounded-md border-gray-950 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm mt-1"
+                            className="input-field mt-1"
                         />
                     </div>
                     <div>
