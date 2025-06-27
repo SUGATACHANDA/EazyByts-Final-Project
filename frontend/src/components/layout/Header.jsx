@@ -7,7 +7,7 @@ const Header = () => {
 
     const handleLogout = () => {
         logout();
-        navigate('/login'); // Redirect to login page after logout
+        navigate('/login');
     };
 
     return (
@@ -40,7 +40,6 @@ const Header = () => {
                             )}
                         </div>
                     </div>
-                    {/* Add mobile menu button if needed */}
                 </div>
             </nav>
         </header>

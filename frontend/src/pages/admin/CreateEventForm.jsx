@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import api from '../../api/axiosConfig';
 
 const CreateEventForm = ({ eventToEdit, onSuccess, onCancelEdit }) => {
-    // Determine if we are in 'edit' mode.
+
     const isEditMode = Boolean(eventToEdit);
 
     const initialState = useMemo(() => ({
@@ -17,11 +17,10 @@ const CreateEventForm = ({ eventToEdit, onSuccess, onCancelEdit }) => {
 
     const currencyRegex = /^\d+(\.\d{1,2})?$/;
 
-    // This effect populates the form when an admin clicks "Edit".
+
     useEffect(() => {
         if (isEditMode) {
-            // --- THE FIX IS HERE ---
-            // Changed `eventToD.date` to the correct variable `eventToEdit.date`
+
             const formattedDate = eventToEdit.date ? new Date(eventToEdit.date).toISOString().split("T")[0] : "";
 
             setFormData({
@@ -37,15 +36,15 @@ const CreateEventForm = ({ eventToEdit, onSuccess, onCancelEdit }) => {
         }
     }, [eventToEdit, initialState, isEditMode]);
 
-    // Handlers for input changes.
+
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
     const handleFileChange = (e) => setImageFile(e.target.files[0]);
 
-    // Main submission handler.
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // --- CLIENT-SIDE VALIDATION ---
+
         if (!currencyRegex.test(formData.price) || parseFloat(formData.price) < 0) {
             setMessage("Price must be a valid number with up to two decimal places (e.g., 49.99).");
             setIsError(true);
@@ -67,12 +66,12 @@ const CreateEventForm = ({ eventToEdit, onSuccess, onCancelEdit }) => {
 
         try {
             if (isEditMode) {
-                // UPDATE LOGIC
+
                 const updateData = { name: formData.name, description: formData.description, date: formData.date, location: formData.location, price: finalPrice, totalTickets: finalTickets };
                 await api.put(`/events/${eventToEdit._id}`, updateData);
                 setMessage("Event updated successfully!");
             } else {
-                // CREATE LOGIC
+
                 if (!imageFile) throw new Error("Please select an event image.");
                 const { data: signData } = await api.get("/events/cloudinary-signature");
                 const cloudFormData = new FormData();
@@ -103,24 +102,24 @@ const CreateEventForm = ({ eventToEdit, onSuccess, onCancelEdit }) => {
 
     return (
         <div className="p-6 bg-white rounded-lg shadow-lg">
-            {/* Form Header */}
+
             <div className="flex justify-between items-center border-b border-gray-200 pb-4 mb-5">
                 <h2 className="text-2xl font-bold text-gray-800">{isEditMode ? "Edit Event" : "Create New Event"}</h2>
                 {isEditMode && <button onClick={onCancelEdit} className="text-sm font-medium text-gray-600 hover:text-black transition-colors">Cancel</button>}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Event Name */}
+
                 <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700">Event Name</label>
                     <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} required className="input-field mt-1" />
                 </div>
-                {/* Description */}
+
                 <div>
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
                     <textarea id="description" name="description" value={formData.description} onChange={handleChange} required rows="4" className="input-field mt-1"></textarea>
                 </div>
-                {/* Date & Location */}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label htmlFor="date" className="block text-sm font-medium text-gray-700">Date</label>
@@ -132,7 +131,7 @@ const CreateEventForm = ({ eventToEdit, onSuccess, onCancelEdit }) => {
                     </div>
                 </div>
 
-                {/* Price & Total Tickets */}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label htmlFor="price" className="block text-sm font-medium text-gray-700">Price (USD)</label>
@@ -152,7 +151,7 @@ const CreateEventForm = ({ eventToEdit, onSuccess, onCancelEdit }) => {
                     </div>
                 </div>
 
-                {/* Image Upload */}
+
                 {!isEditMode && (
                     <div>
                         <label htmlFor="imageFile" className="block text-sm font-medium text-gray-700">Event Image</label>
@@ -161,14 +160,14 @@ const CreateEventForm = ({ eventToEdit, onSuccess, onCancelEdit }) => {
                     </div>
                 )}
 
-                {/* Submit Button */}
+
                 <div className="pt-2">
                     <button type="submit" disabled={loading} className="btn-primary w-full disabled:bg-indigo-400 disabled:cursor-not-allowed">
                         {loading ? 'Saving...' : (isEditMode ? 'Update Event' : 'Create Event')}
                     </button>
                 </div>
 
-                {/* Message Display Area */}
+
                 {message && (
                     <div className={`mt-4 text-center text-sm p-3 rounded-md ${isError ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
                         {message}

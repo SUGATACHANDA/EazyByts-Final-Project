@@ -1,80 +1,37 @@
-/*
-============================================================
- Main Stylesheet for the Eventive Application (index.css)
-============================================================
-*/
-
-/* 
- * 1. TAILWIND DIRECTIVES
- * ---------------------
- * These are required for Tailwind CSS to work.
- * They inject Tailwind's base styles, component classes, and utility classes
- * into your final CSS bundle. This must be at the top of the file.
-*/
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/*
- * 2. GLOBAL BASE STYLES
- * --------------------
- * Apply some default styles to the entire application for a consistent look.
- * We apply a soft background color to the body and set the default text color.
-*/
 body {
-    @apply bg-slate-50 text-gray-800;
+  @apply bg-slate-50 text-gray-800;
 }
 
-
-/*
- * 3. CUSTOM COMPONENT CLASSES
- * ---------------------------
- * Using `@layer components`, we can create our own reusable classes composed
- * of Tailwind's utility classes. This helps maintain design consistency and
- * keeps the JSX cleaner.
-*/
 @layer components {
-    /* Base styles for all text input fields, textareas, etc. */
-    .input-field {
-        @apply block w-full rounded-md border-gray-300 border p-2 shadow-sm outline-none focus:border-blue-500  sm:text-sm;
-    }
+  .input-field {
+    @apply block w-full rounded-md border-gray-300 border p-2 shadow-sm outline-none focus:border-blue-500  sm:text-sm;
+  }
 
-    /* Primary action button (e.g., Sign Up, Buy Tickets) */
-    .btn-primary {
-        @apply inline-flex justify-center items-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors;
-    }
+  .btn-primary {
+    @apply inline-flex justify-center items-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors;
+  }
 
-    /* Secondary action button (e.g., Logout, View Event) */
-    .btn-secondary {
-        @apply inline-flex justify-center items-center px-6 py-2.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors;
-    }
-    
-    /* Navigation link styling used in the Header component. */
-    .nav-link {
-        @apply text-gray-700 hover:bg-gray-100 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors;
-    }
+  .btn-secondary {
+    @apply inline-flex justify-center items-center px-6 py-2.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors;
+  }
+
+  .nav-link {
+    @apply text-gray-700 hover:bg-gray-100 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors;
+  }
 }
 
-
-/*
- * 4. CUSTOM UTILITY CLASSES
- * -------------------------
- * These are small, single-purpose classes that solve problems Tailwind
- * doesn't cover out of the box, like hiding the number input spinners.
-*/
 @layer utilities {
-    /* 
-     * Hides the arrows from number input fields for a cleaner look.
-     * Targets Webkit browsers (Chrome, Safari) and Firefox.
-     */
-    .no-arrows::-webkit-outer-spin-button,
-    .no-arrows::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
+  .no-arrows::-webkit-outer-spin-button,
+  .no-arrows::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
 
-    /* Hides the arrows for Firefox */
-    .no-arrows {
-        -moz-appearance: textfield;
-    }
+  .no-arrows {
+    -moz-appearance: textfield;
+  }
 }

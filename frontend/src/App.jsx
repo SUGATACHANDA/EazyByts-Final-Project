@@ -10,15 +10,13 @@ import RegisterPage from './pages/RegisterPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import NotFoundPage from './pages/NotFoundPage';
 
-// Components
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import PrivateRoute from './components/routes/PrivateRoute';
 import AdminRoute from './components/routes/AdminRoute';
-import Spinner from './components/utils/Spinner';
 import MyBookingsPage from './pages/MyBookingPage';
-import { PaddleLoader } from './components/utils/PaddleLoader';
 import { PaddleProvider } from './contexts/PaddleContext';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
 
 function App() {
     return (
@@ -26,24 +24,25 @@ function App() {
             <AuthProvider>
                 <PaddleProvider>
 
-                    {/* <PaddleLoader /> */}
+
                     <div className="flex flex-col min-h-screen">
                         <Header />
                         <main className="flex-grow container mx-auto px-4 py-8">
                             <Routes>
-                                {/* Public Routes */}
+
                                 <Route path="/" element={<HomePage />} />
                                 <Route path="/login" element={<LoginPage />} />
                                 <Route path="/register" element={<RegisterPage />} />
                                 <Route path="/event/:id" element={<EventDetailsPage />} />
+                                <Route path="/payment_status=success" element={<PrivateRoute><PaymentSuccessPage /></PrivateRoute>} />
 
-                                {/* Private User Routes */}
+
                                 <Route path="/my-bookings" element={<PrivateRoute><MyBookingsPage /></PrivateRoute>} />
 
-                                {/* Private Admin Routes */}
+
                                 <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
 
-                                {/* Not Found */}
+
                                 <Route path="*" element={<NotFoundPage />} />
                             </Routes>
                         </main>

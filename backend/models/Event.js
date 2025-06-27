@@ -6,7 +6,7 @@ const EventSchema = new mongoose.Schema({
     date: { type: Date, required: true },
     location: { type: String, required: true },
     imageUrl: { type: String, required: true },
-    cloudinaryId: { type: String, required: true }, // To delete the image from Cloudinary later
+    cloudinaryId: { type: String, required: true },
     price: { type: Number, required: true },
     totalTickets: { type: Number, required: true },
     ticketsRemaining: { type: Number, required: true },

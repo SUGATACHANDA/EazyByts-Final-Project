@@ -6,15 +6,15 @@ import Spinner from '../components/utils/Spinner';
 import { usePaddle } from '../hooks/usePaddle';
 
 const EventDetailsPage = () => {
-    // Get the event ID from the URL (e.g., /event/60d... becomes '60d...')
+
     const { id: eventId } = useParams();
 
-    // Hooks for navigation, location (for redirects), and authentication state
+
     const navigate = useNavigate();
     const location = useLocation();
     const { user, loading: authLoading } = useAuth();
 
-    // State for the component itself
+
     const [event, setEvent] = useState(null);
     const [quantity, setQuantity] = useState(1);
     const [loading, setLoading] = useState(true);
@@ -23,7 +23,7 @@ const EventDetailsPage = () => {
     const success_url = import.meta.env.VITE_SUCCESS_APP_FRONTEND_URL
 
     useEffect(() => {
-        // Function to fetch the event data from the backend
+
         const fetchEvent = async () => {
             setLoading(true);
             setError('');
@@ -42,24 +42,23 @@ const EventDetailsPage = () => {
         fetchEvent();
     }, [eventId]);
 
-    const paddle = usePaddle()// Re-run this effect if the eventId in the URL changes
+    const paddle = usePaddle()
 
 
     const handleBuyTickets = () => {
-        // 1. Check if user is logged in. If not, redirect to login page,
-        //    but remember where they came from so we can send them back here after login.
+
         if (!user) {
             navigate('/login', { state: { from: location } });
             return;
         }
 
-        // 2. Make sure Paddle.js is loaded and the event data is available.
+
         if (!paddle || !event) {
             alert('Checkout is not ready yet. Please wait a moment and try again.');
             return;
         }
 
-        // 3. Initiate the Paddle Checkout
+
         paddle.Checkout.open({
 
             items: [{
@@ -83,18 +82,18 @@ const EventDetailsPage = () => {
         });
     };
 
-    // Show a spinner while the event or authentication state is loading
+
     if (loading || authLoading) return <Spinner />;
 
-    // Show an error message if the fetch failed
+
     if (error) {
         return <div className="text-center bg-red-100 text-red-700 p-8 rounded-lg max-w-md mx-auto">{error}</div>;
     }
 
-    // This case handles when loading is done but event is still null (e.g., bad ID)
+
     if (!event) return null;
 
-    // Helper variables for UI state
+
     const isSoldOut = event.ticketsRemaining === 0;
     const formattedDate = new Date(event.date).toLocaleDateString('en-US', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
@@ -103,12 +102,12 @@ const EventDetailsPage = () => {
     return (
         <div className="bg-white rounded-lg shadow-2xl max-w-5xl mx-auto overflow-hidden">
             <div className="md:flex">
-                {/* Left Side: Image */}
+
                 <div className="md:w-1/2">
                     <img className="h-64 w-full object-cover md:h-full" src={event.imageUrl} alt={event.name} />
                 </div>
 
-                {/* Right Side: Details and Actions */}
+
                 <div className="p-8 md:w-1/2 flex flex-col justify-between">
                     <div>
                         <div className="uppercase tracking-wide text-sm text-indigo-500 font-semibold">{event.location}</div>

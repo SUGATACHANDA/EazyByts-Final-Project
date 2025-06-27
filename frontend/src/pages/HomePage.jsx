@@ -14,10 +14,10 @@ const HomePage = () => {
 
     useEffect(() => {
         const fetchEvents = async () => {
-            if (page === 1) setLoading(true); // Full screen spinner only on first load
+            if (page === 1) setLoading(true);
 
             try {
-                // Call the public endpoint with pagination
+
                 const { data } = await api.get(`/events?page=${page}`);
 
                 const newEvents = data.events || [];
