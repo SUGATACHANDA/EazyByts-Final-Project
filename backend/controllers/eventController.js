@@ -1,6 +1,7 @@
 const Event = require('../models/Event');
 const axios = require('axios');
 const cloudinary = require('cloudinary').v2;
+const jwt = require('jsonwebtoken');
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -159,6 +160,33 @@ const getCloudinarySignature = (req, res) => {
     res.json({ timestamp, folder, signature, cloudName: process.env.CLOUDINARY_CLOUD_NAME, apiKey: process.env.CLOUDINARY_API_KEY });
 };
 
+const createCheckoutSessionToken = async (req, res) => {
+    const eventId = req.params.id;
+    const userId = req.user._id; // We get this from the `protect` middleware
+
+    try {
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return res.status(404).json({ message: 'Event not found.' });
+        }
+
+
+        const payload = {
+            eventId: eventId,
+            userId: userId,
+        };
+
+
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '3m' });
+
+        res.json({ token });
+
+    } catch (error) {
+        console.error("Error creating checkout session token:", error);
+        res.status(500).json({ message: "Server error." });
+    }
+};
+
 
 
 module.exports = {
@@ -168,4 +196,5 @@ module.exports = {
     updateEvent,
     deleteEvent,
     getCloudinarySignature,
+    createCheckoutSessionToken,
 };

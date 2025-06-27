@@ -7,7 +7,8 @@ const {
     createEvent,
     updateEvent,
     deleteEvent,
-    getCloudinarySignature
+    getCloudinarySignature,
+    createCheckoutSessionToken
 } = require('../controllers/eventController');
 
 
@@ -22,5 +23,7 @@ router.route('/:id')
     .get(getEventById)
     .put(protect, admin, updateEvent)
     .delete(protect, admin, deleteEvent);
+
+router.route('/:id/checkout-session').post(protect, createCheckoutSessionToken);
 
 module.exports = router;
