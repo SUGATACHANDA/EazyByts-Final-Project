@@ -191,7 +191,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { useAuth } from '../hooks/useAuth';
-import { usePaddle } from '../contexts/PaddleContext';
+import { usePaddle } from '../hooks/usePaddle';
 import Spinner from '../components/utils/Spinner';
 
 const EventDetailsPage = () => {
