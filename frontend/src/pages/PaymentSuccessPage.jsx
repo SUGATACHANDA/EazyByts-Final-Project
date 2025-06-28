@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from 'react'; // <-- Import useRef
-import { Link, useSearchParams } from 'react-router-dom';
-import { CheckCircleIcon, DocumentDuplicateIcon } from '@heroicons/react/24/solid';
+import { useEffect, useState, useRef } from 'react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'; // <-- Import useNavigate
+import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../hooks/useAuth';
 import api from '../api/axiosConfig';
 import Spinner from '../components/utils/Spinner';
@@ -8,24 +8,20 @@ import Spinner from '../components/utils/Spinner';
 const PaymentSuccessPage = () => {
     // Hooks for getting data from URL and context
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate(); // <-- Add the navigate hook
     const { fetchUserBookings } = useAuth();
 
     // State for this page's data and UI
     const [bookingDetails, setBookingDetails] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-
-    // --- THE FIX: Using useRef to ensure the fetch runs only once ---
-    // A ref is like an "instance variable" for a functional component.
-    // Its value persists across renders but changing it does NOT trigger a re-render.
     const hasFetched = useRef(false);
 
     useEffect(() => {
-        // --- This guard clause prevents the effect from running more than once ---
+        // Guard clause prevents this effect from running more than once.
         if (hasFetched.current) {
             return;
         }
-        // Immediately set the flag to true.
         hasFetched.current = true;
 
         const eventId = searchParams.get('event_id');
@@ -40,35 +36,37 @@ const PaymentSuccessPage = () => {
             try {
                 const { data } = await api.get(`/bookings/latest?event_id=${eventId}`);
 
-                // Success!
+                // --- SUCCESS! ---
                 setBookingDetails(data);
-                setError('');
-                fetchUserBookings(); // Prefetch the full bookings list in the background.
+                fetchUserBookings();
+
+                // --- THE NEW LOGIC: REDIRECT AFTER A DELAY ---
+                console.log("Purchase confirmed. Redirecting to My Bookings in 5 seconds...");
+                setTimeout(() => {
+                    // We use `replace: true` to remove the current URL from the browser history.
+                    navigate('/my-bookings', { replace: true });
+                }, 5000); // 5-second delay for the user to see the page
 
             } catch (err) {
+                // ... existing error handling with retries ...
                 if (err.response?.status === 404 && retries > 0) {
-                    console.log(`Booking confirmation not found yet. Retrying in ${delay}ms...`);
-                    // If not found, wait and try again.
                     setTimeout(() => fetchConfirmation(retries - 1, delay), delay);
                 } else {
-                    // All retries failed or a different error occurred.
-                    console.error("Failed to fetch confirmation:", err);
-                    setError("We couldn't confirm your booking details automatically, but your purchase was likely successful. Please check 'My Bookings' shortly.");
-                    setIsLoading(false); // Stop loading on final failure
+                    setError("We couldn't confirm your booking automatically, but your purchase was likely successful. You will be redirected shortly.");
+                    setIsLoading(false);
+                    // Also redirect on failure after a delay
+                    setTimeout(() => {
+                        navigate('/my-bookings', { replace: true });
+                    }, 8000);
                 }
             }
         };
-
-        // Start the fetching process with our retry logic.
         fetchConfirmation();
 
-        // The dependency array should only contain values that, if changed, should
-        // legitimately re-trigger the ENTIRE fetch process.
-    }, [searchParams, fetchUserBookings]);
+    }, [searchParams, fetchUserBookings, navigate]);
 
 
-    // This small, separate effect handles stopping the main loading spinner
-    // only when we have a definitive result (either data or an error).
+    // This small effect handles stopping the loading spinner.
     useEffect(() => {
         if (bookingDetails || error) {
             setIsLoading(false);
@@ -76,64 +74,43 @@ const PaymentSuccessPage = () => {
     }, [bookingDetails, error]);
 
 
-    // Function to copy the transaction ID.
-    const copyToClipboard = () => {
-        if (!bookingDetails?.paddleTransactionId) return;
-        navigator.clipboard.writeText(bookingDetails.paddleTransactionId)
-            .then(() => alert("Transaction ID copied to clipboard!"))
-            .catch(err => console.error("Failed to copy text:", err));
-    };
-
     if (isLoading) {
         return (
             <div className="text-center py-20">
                 <Spinner />
                 <p className="mt-4 text-lg text-gray-600">Finalizing your purchase, please wait...</p>
-                <p className="mt-2 text-sm text-gray-400">(This can take a few seconds)</p>
             </div>
         );
     }
 
     return (
-        <div className="flex items-center justify-center min-h-[calc(100vh-12rem)] bg-gray-50 -my-8">
+        <div className="flex items-center justify-center min-h-[calc(100vh-12rem)]">
             <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg text-center">
-
-                <CheckCircleIcon className="mx-auto h-24 w-24 text-green-500 animate-pulse-slow" />
+                <CheckCircleIcon className="mx-auto h-24 w-24 text-green-500" />
 
                 <div className="text-center">
                     <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Payment Successful!</h2>
-                    {/* Safely display the event name from fetched data. */}
+                    {/* Display a confirmation message based on success or final error */}
                     <p className="mt-2 text-md text-gray-600">
-                        Your ticket for "{bookingDetails?.event.name || 'the event'}" is confirmed.
+                        {bookingDetails
+                            ? `Your ticket for "${bookingDetails.event.name}" is confirmed.`
+                            : `Your purchase was successful.`}
                     </p>
                 </div>
 
-                {/* Show either the successfully fetched details or the final error message. */}
-                {bookingDetails ? (
-                    <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-                        <p className="text-sm text-gray-500 mb-2">Your Transaction ID:</p>
-                        <div className="flex items-center justify-center bg-white p-2 rounded border">
-                            <p className="text-xs font-mono text-gray-700 mr-4 break-all">{bookingDetails.paddleTransactionId}</p>
-                            <button onClick={copyToClipboard} title="Copy to Clipboard" className="shrink-0">
-                                <DocumentDuplicateIcon className="h-5 w-5 text-gray-400 hover:text-indigo-600" />
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="bg-red-50 p-4 rounded-md border-red-200">
-                        <p className="text-sm text-red-700">{error}</p>
-                    </div>
-                )}
+                {/* Main feedback area */}
+                <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+                    <p className="text-sm text-gray-500">
+                        {error
+                            ? error // Show the specific error if one occurred
+                            : `You will be automatically redirected to your bookings page shortly.`}
+                    </p>
+                </div>
 
-                {/* Navigation Buttons */}
+                {/* Manual redirect button */}
                 <div>
                     <Link to="/my-bookings" className="btn-primary w-full">
-                        Go to My Bookings
-                    </Link>
-                </div>
-                <div className="text-sm text-center">
-                    <Link to="/" className="font-medium text-indigo-600 hover:text-indigo-500">
-                        or continue browsing events →
+                        Go to My Bookings Now
                     </Link>
                 </div>
             </div>
