@@ -2,97 +2,103 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { useAuth } from '../hooks/useAuth';
-import Spinner from '../components/utils/Spinner';
 import { usePaddle } from '../hooks/usePaddle';
+import Spinner from '../components/utils/Spinner';
 
+/**
+ * EventDetailsPage Component
+ * 
+ * Displays the full details of a single event and handles the logic
+ * for initiating a ticket purchase via Paddle checkout.
+ */
 const EventDetailsPage = () => {
-
+    // --- Hooks for routing, state, and context ---
     const { id: eventId } = useParams();
-
-
     const navigate = useNavigate();
     const location = useLocation();
     const { user, loading: authLoading } = useAuth();
+    const paddle = usePaddle(); // Gets the initialized Paddle instance from our context
 
-
+    // --- Component-specific state ---
     const [event, setEvent] = useState(null);
     const [quantity, setQuantity] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false); // Prevents multiple checkout clicks
 
-    const success_url = import.meta.env.VITE_SUCCESS_APP_FRONTEND_URL
-
+    // This effect fetches the event details from the backend when the component loads.
     useEffect(() => {
-
         const fetchEvent = async () => {
             setLoading(true);
             setError('');
             try {
                 const { data } = await api.get(`/events/${eventId}`);
-                document.title = `${data.name} | Eventive`
+                document.title = `${data.name} | Eventive`; // Set the browser tab title
                 setEvent(data);
             } catch (err) {
                 console.error("Failed to fetch event details:", err);
-                setError('Could not find the event. It might have been moved or deleted.');
+                setError('Could not find the event. It may have been moved or deleted.');
             } finally {
                 setLoading(false);
             }
         };
 
         fetchEvent();
-    }, [eventId]);
-
-    const paddle = usePaddle()
+    }, [eventId]); // Re-run this effect if the eventId in the URL changes.
 
 
+    // This function handles the "Buy Tickets" button click.
     const handleBuyTickets = () => {
-
+        // 1. Prerequisite checks: user must be logged in, and Paddle must be ready.
         if (!user) {
-            navigate('/login', { state: { from: location } });
+            navigate('/login', { state: { from: location } }); // Redirect to login, remembering this page
             return;
         }
-
-
         if (!paddle || !event) {
-            alert('Checkout is not ready yet. Please wait a moment and try again.');
+            alert('Checkout is not quite ready. Please wait a moment and try again.');
             return;
         }
+        if (isProcessing) return; // Prevent multiple rapid clicks
 
+        setIsProcessing(true);
 
+        // 2. Construct the success URL. Paddle will redirect the user here after payment.
+        // The PaymentSuccessPage will use the `event_id` to fetch final transaction details.
+        const successUrl = `${window.location.origin}/payment-success?event_id=${event._id}&quantity=${quantity}`;
+
+        // 3. Open the Paddle Checkout overlay with all necessary parameters.
         paddle.Checkout.open({
-
+            // What the user is buying
             items: [{
                 priceId: event.paddlePriceId,
                 quantity: quantity
             }],
-
-            settings: {
-                displayMode: "overlay",
-                theme: "light",
-                locale: "en",
-                successUrl: `${success_url}/${eventId}/payment_status=success`,
-            },
-
+            // Pre-fill user's email
             email: user.email,
+            // Data for our secure webhook to process for database updates
             customData: {
                 eventId: event._id,
                 userId: user._id,
                 quantity: quantity.toString(),
             },
+            // Settings for the checkout overlay, including the crucial redirect URL.
+            settings: {
+                displayMode: "overlay",
+                theme: "light",
+                locale: "en",
+                successUrl: successUrl,
+            }
         });
+
+        // Reset the button state after a few seconds, as Paddle takes over from here.
+        setTimeout(() => setIsProcessing(false), 3000);
     };
 
+    // --- RENDER LOGIC ---
 
     if (loading || authLoading) return <Spinner />;
-
-
-    if (error) {
-        return <div className="text-center bg-red-100 text-red-700 p-8 rounded-lg max-w-md mx-auto">{error}</div>;
-    }
-
-
-    if (!event) return null;
-
+    if (error) return <div className="text-center bg-red-100 text-red-700 p-8 rounded-lg max-w-md mx-auto">{error}</div>;
+    if (!event) return null; // Render nothing if the event is not found and there is no error
 
     const isSoldOut = event.ticketsRemaining === 0;
     const formattedDate = new Date(event.date).toLocaleDateString('en-US', {
@@ -102,12 +108,12 @@ const EventDetailsPage = () => {
     return (
         <div className="bg-white rounded-lg shadow-2xl max-w-5xl mx-auto overflow-hidden">
             <div className="md:flex">
-
+                {/* Left Side: Image */}
                 <div className="md:w-1/2">
                     <img className="h-64 w-full object-cover md:h-full" src={event.imageUrl} alt={event.name} />
                 </div>
 
-
+                {/* Right Side: Details and Actions */}
                 <div className="p-8 md:w-1/2 flex flex-col justify-between">
                     <div>
                         <div className="uppercase tracking-wide text-sm text-indigo-500 font-semibold">{event.location}</div>
@@ -118,61 +124,41 @@ const EventDetailsPage = () => {
 
                     <div className="mt-8 border-t-2 pt-6">
                         <div className="flex justify-between items-center mb-4">
-                            <span className="text-3xl font-bold text-gray-900">${event.price.toFixed(2)}</span>
+                            <span className="text-3xl font-bold text-gray-900">${parseFloat(event.price).toFixed(2)}</span>
                             <span className={`px-4 py-2 text-md font-semibold rounded-full ${isSoldOut ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'}`}>
-                                {isSoldOut ? 'Sold Out' : `${event.
-                                    ticketsRemaining} Tickets Remaining`}
+                                {isSoldOut ? 'Sold Out' : `${event.ticketsRemaining} Tickets Remaining`}
                             </span>
                         </div>
 
                         {!isSoldOut && (
-                            <div className="flex items-center gap-4 mt-4">
-                                <div>
-                                    <label
-                                        htmlFor="quantity"
-                                        className="block text-sm font-medium text-gray-700"
-                                    >
-                                        Quantity
-                                    </label>
+                            <div className="flex items-stretch gap-4 mt-4">
+                                <div className="w-28">
+                                    <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 text-center mb-1">Quantity</label>
                                     <input
-                                        id="quantity"
-                                        type="number"
-                                        value={quantity}
+                                        id="quantity" type="number" value={quantity}
                                         onChange={(e) => {
-                                            let newQuantity = e.target.value;
-
-                                            if (newQuantity === '') {
-                                                setQuantity('');
-                                                return;
-                                            }
-
-                                            newQuantity = parseInt(newQuantity, 10);
-                                            if (isNaN(newQuantity)) newQuantity = 1;
-                                            newQuantity = Math.max(1, newQuantity);
-
-                                            if (event?.ticketsRemaining) {
-                                                newQuantity = Math.min(newQuantity, event.ticketsRemaining);
-                                            }
-
-                                            setQuantity(newQuantity);
+                                            const val = e.target.value;
+                                            if (val === '') { setQuantity(''); return; }
+                                            const num = parseInt(val, 10);
+                                            // This validation ensures the quantity is always between 1 and the number of tickets remaining.
+                                            setQuantity(Math.max(1, Math.min(event.ticketsRemaining, num || 1)));
                                         }}
-                                        min="1"
-                                        max={event?.ticketsRemaining}
-                                        placeholder="1"
-
-                                        // --- STYLING CHANGES ARE HERE ---
-                                        className="input-field no-arrows text-center font-semibold"
-
+                                        min="1" max={event?.ticketsRemaining} placeholder="1"
+                                        className="input-field no-arrows h-full text-center text-lg font-semibold py-3 px-2"
                                     />
                                 </div>
-                                <button onClick={handleBuyTickets} className="btn-inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4  font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex-grow h-14 text-lg">
-                                    Buy Tickets
+                                <button
+                                    onClick={handleBuyTickets}
+                                    disabled={isProcessing}
+                                    className="btn-primary flex-grow text-lg disabled:bg-indigo-400"
+                                >
+                                    {isProcessing ? 'Opening...' : 'Buy Tickets'}
                                 </button>
                             </div>
                         )}
 
                         {isSoldOut && (
-                            <button disabled className="w-full h-14 text-lg font-bold btn-inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4  text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2    cursor-not-allowed">
+                            <button disabled className="w-full h-14 text-lg font-bold btn-primary bg-gray-400 cursor-not-allowed">
                                 Sold Out
                             </button>
                         )}
