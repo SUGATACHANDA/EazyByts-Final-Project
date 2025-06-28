@@ -9,6 +9,8 @@ const AdminDashboardPage = () => {
     const [loading, setLoading] = useState(true);
     const [selectedEvent, setSelectedEvent] = useState(null);
 
+    document.title = "Manage Events | Eventive"
+
 
     const fetchAdminEvents = async () => {
         setLoading(true);

@@ -51,6 +51,8 @@ const MyBookingsPage = () => {
     const [error, setError] = useState('');
     const { user } = useAuth();
 
+    document.title = "My Bookings | Eventive";
+
     useEffect(() => {
         const fetchBookings = async () => {
             try {

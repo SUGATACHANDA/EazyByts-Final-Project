@@ -1,24 +1,25 @@
 import { useEffect, useState, useRef } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom'; // <-- Import useNavigate
-import { CheckCircleIcon } from '@heroicons/react/24/solid';
-import { useAuth } from '../hooks/useAuth';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
+import { useAuth } from '../hooks/useAuth';
 import Spinner from '../components/utils/Spinner';
 
 const PaymentSuccessPage = () => {
-    // Hooks for getting data from URL and context
+    // Hooks for getting data from URL, navigating, and accessing context
     const [searchParams] = useSearchParams();
-    const navigate = useNavigate(); // <-- Add the navigate hook
+    const navigate = useNavigate();
     const { fetchUserBookings } = useAuth();
 
-    // State for this page's data and UI
-    const [bookingDetails, setBookingDetails] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
+    // State to track the outcome of the confirmation
+    const [status, setStatus] = useState('processing');
+    const [confirmedBooking, setConfirmedBooking] = useState(null);
+
+    // useRef to ensure the fetching logic runs only once, preventing loops
     const hasFetched = useRef(false);
 
+    // This effect handles the entire confirmation logic
     useEffect(() => {
-        // Guard clause prevents this effect from running more than once.
+        // Guard clause: Do not run this effect more than once.
         if (hasFetched.current) {
             return;
         }
@@ -26,94 +27,65 @@ const PaymentSuccessPage = () => {
 
         const eventId = searchParams.get('event_id');
 
+        // If the URL is missing the event_id, we can't proceed.
         if (!eventId) {
-            setError('Could not verify purchase: Required information is missing.');
-            setIsLoading(false);
+            setStatus('error');
             return;
         }
 
-        const fetchConfirmation = async (retries = 5, delay = 1500) => {
+        const confirmPurchase = async (retries = 5, delay = 1500) => {
             try {
+                // Call the secure backend endpoint to get the booking details
                 const { data } = await api.get(`/bookings/latest?event_id=${eventId}`);
-
-                // --- SUCCESS! ---
-                setBookingDetails(data);
-                fetchUserBookings();
-
-                // --- THE NEW LOGIC: REDIRECT AFTER A DELAY ---
-                console.log("Purchase confirmed. Redirecting to My Bookings in 5 seconds...");
-                setTimeout(() => {
-                    // We use `replace: true` to remove the current URL from the browser history.
-                    navigate('/my-bookings', { replace: true });
-                }, 5000); // 5-second delay for the user to see the page
-
+                // Success! Store the data and update status.
+                setConfirmedBooking(data);
+                setStatus('success');
+                fetchUserBookings(); // Trigger background refetch of all bookings for the context
             } catch (err) {
-                // ... existing error handling with retries ...
                 if (err.response?.status === 404 && retries > 0) {
-                    setTimeout(() => fetchConfirmation(retries - 1, delay), delay);
+                    // If not found yet (webhook delay), wait and try again.
+                    setTimeout(() => confirmPurchase(retries - 1, delay), delay);
                 } else {
-                    setError("We couldn't confirm your booking automatically, but your purchase was likely successful. You will be redirected shortly.");
-                    setIsLoading(false);
-                    // Also redirect on failure after a delay
-                    setTimeout(() => {
-                        navigate('/my-bookings', { replace: true });
-                    }, 8000);
+                    // All retries failed or a different error occurred.
+                    console.error("Failed to confirm purchase:", err);
+                    setStatus('error'); // On final failure, set status to 'error'
                 }
             }
         };
-        fetchConfirmation();
 
-    }, [searchParams, fetchUserBookings, navigate]);
+        // Start the process
+        confirmPurchase();
+
+    }, [searchParams, fetchUserBookings, navigate]); // Dependencies are stable and safe.
 
 
-    // This small effect handles stopping the loading spinner.
+    // This second, separate effect handles the redirect.
+    // It runs only when the `status` changes from 'processing' to 'success' or 'error'.
     useEffect(() => {
-        if (bookingDetails || error) {
-            setIsLoading(false);
+        if (status === 'success' || status === 'error') {
+            console.log(`Purchase status: ${status}. Redirecting to /my-bookings...`);
+
+            // This is the key to preventing the back-button problem.
+            // It navigates to the bookings page and REPLACES the current URL 
+            // (`/payment-success?event_id=...`) in the browser's history.
+            // It also passes the status and data along as state.
+            navigate('/my-bookings', {
+                replace: true,
+                state: {
+                    purchaseStatus: status,
+                    confirmedBooking: confirmedBooking
+                }
+            });
         }
-    }, [bookingDetails, error]);
+    }, [status, confirmedBooking, navigate]);
 
 
-    if (isLoading) {
-        return (
-            <div className="text-center py-20">
-                <Spinner />
-                <p className="mt-4 text-lg text-gray-600">Finalizing your purchase, please wait...</p>
-            </div>
-        );
-    }
-
+    // The UI for this page is very simple, as the user will only see it briefly.
     return (
-        <div className="flex items-center justify-center min-h-[calc(100vh-12rem)]">
-            <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg text-center">
-                <CheckCircleIcon className="mx-auto h-24 w-24 text-green-500" />
-
-                <div className="text-center">
-                    <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Payment Successful!</h2>
-                    {/* Display a confirmation message based on success or final error */}
-                    <p className="mt-2 text-md text-gray-600">
-                        {bookingDetails
-                            ? `Your ticket for "${bookingDetails.event.name}" is confirmed.`
-                            : `Your purchase was successful.`}
-                    </p>
-                </div>
-
-                {/* Main feedback area */}
-                <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-                    <p className="text-sm text-gray-500">
-                        {error
-                            ? error // Show the specific error if one occurred
-                            : `You will be automatically redirected to your bookings page shortly.`}
-                    </p>
-                </div>
-
-                {/* Manual redirect button */}
-                <div>
-                    <Link to="/my-bookings" className="btn-primary w-full">
-                        Go to My Bookings Now
-                    </Link>
-                </div>
-            </div>
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)]">
+            <Spinner />
+            <h2 className="mt-4 text-xl font-semibold text-gray-700">Finalizing Your Purchase</h2>
+            <p className="text-gray-500">Please wait, this may take a few seconds...</p>
         </div>
     );
 };

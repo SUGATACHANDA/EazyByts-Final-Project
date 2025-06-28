@@ -144,7 +144,7 @@ const EventDetailsPage = () => {
                                             setQuantity(Math.max(1, Math.min(event.ticketsRemaining, num || 1)));
                                         }}
                                         min="1" max={event?.ticketsRemaining} placeholder="1"
-                                        className="input-field no-arrows h-full text-center text-lg font-semibold py-3 px-2"
+                                        className="input-field no-arrows text-center text-lg font-semibold"
                                     />
                                 </div>
                                 <button
