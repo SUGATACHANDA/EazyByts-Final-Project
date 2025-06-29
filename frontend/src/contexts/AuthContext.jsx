@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
             setBookings(data || []); // Use fallback to prevent errors
         } catch (error) {
             console.error("AuthContext: Failed to prefetch bookings.", error);
-            // Don't block the user, just clear the bookings state on error.
+
             setBookings([]);
         }
     };

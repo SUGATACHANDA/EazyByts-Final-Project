@@ -4,9 +4,9 @@ import api from '../api/axiosConfig';
 import { useAuth } from '../hooks/useAuth';
 import Spinner from '../components/utils/Spinner';
 
-// A sub-component to render each individual booking for cleaner code
+
 const BookingCard = ({ booking }) => {
-    // Format the date for better readability
+
     const formattedDate = new Date(booking.event.date).toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
@@ -44,7 +44,7 @@ const BookingCard = ({ booking }) => {
     );
 };
 
-// The main page component
+
 const MyBookingsPage = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -56,7 +56,7 @@ const MyBookingsPage = () => {
     useEffect(() => {
         const fetchBookings = async () => {
             try {
-                // The API endpoint automatically knows the user from the JWT token
+
                 const { data } = await api.get('/bookings/mybookings');
                 setBookings(data);
             } catch (err) {
@@ -70,7 +70,7 @@ const MyBookingsPage = () => {
         if (user) {
             fetchBookings();
         }
-    }, [user]); // Re-fetch if the user changes (e.g., re-login)
+    }, [user]);
 
     if (loading) {
         return <Spinner />;

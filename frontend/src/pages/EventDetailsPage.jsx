@@ -5,35 +5,28 @@ import { useAuth } from '../hooks/useAuth';
 import { usePaddle } from '../hooks/usePaddle';
 import Spinner from '../components/utils/Spinner';
 
-/**
- * EventDetailsPage Component
- * 
- * Displays the full details of a single event and handles the logic
- * for initiating a ticket purchase via Paddle checkout.
- */
 const EventDetailsPage = () => {
-    // --- Hooks for routing, state, and context ---
+
     const { id: eventId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
     const { user, loading: authLoading } = useAuth();
-    const paddle = usePaddle(); // Gets the initialized Paddle instance from our context
+    const paddle = usePaddle();
 
-    // --- Component-specific state ---
+
     const [event, setEvent] = useState(null);
     const [quantity, setQuantity] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [isProcessing, setIsProcessing] = useState(false); // Prevents multiple checkout clicks
+    const [isProcessing, setIsProcessing] = useState(false);
 
-    // This effect fetches the event details from the backend when the component loads.
     useEffect(() => {
         const fetchEvent = async () => {
             setLoading(true);
             setError('');
             try {
                 const { data } = await api.get(`/events/${eventId}`);
-                document.title = `${data.name} | Eventive`; // Set the browser tab title
+                document.title = `${data.name} | Eventive`;
                 setEvent(data);
             } catch (err) {
                 console.error("Failed to fetch event details:", err);
@@ -44,44 +37,42 @@ const EventDetailsPage = () => {
         };
 
         fetchEvent();
-    }, [eventId]); // Re-run this effect if the eventId in the URL changes.
+    }, [eventId]);
 
 
-    // This function handles the "Buy Tickets" button click.
+
     const handleBuyTickets = () => {
-        // 1. Prerequisite checks: user must be logged in, and Paddle must be ready.
+
         if (!user) {
-            navigate('/login', { state: { from: location } }); // Redirect to login, remembering this page
+            navigate('/login', { state: { from: location } });
             return;
         }
         if (!paddle || !event) {
             alert('Checkout is not quite ready. Please wait a moment and try again.');
             return;
         }
-        if (isProcessing) return; // Prevent multiple rapid clicks
+        if (isProcessing) return;
 
         setIsProcessing(true);
 
-        // 2. Construct the success URL. Paddle will redirect the user here after payment.
-        // The PaymentSuccessPage will use the `event_id` to fetch final transaction details.
         const successUrl = `${window.location.origin}/payment-success?event_id=${event._id}&quantity=${quantity}`;
 
-        // 3. Open the Paddle Checkout overlay with all necessary parameters.
+
         paddle.Checkout.open({
-            // What the user is buying
+
             items: [{
                 priceId: event.paddlePriceId,
                 quantity: quantity
             }],
-            // Pre-fill user's email
+
             email: user.email,
-            // Data for our secure webhook to process for database updates
+
             customData: {
                 eventId: event._id,
                 userId: user._id,
                 quantity: quantity.toString(),
             },
-            // Settings for the checkout overlay, including the crucial redirect URL.
+
             settings: {
                 displayMode: "overlay",
                 theme: "light",
@@ -90,15 +81,14 @@ const EventDetailsPage = () => {
             }
         });
 
-        // Reset the button state after a few seconds, as Paddle takes over from here.
+
         setTimeout(() => setIsProcessing(false), 3000);
     };
 
-    // --- RENDER LOGIC ---
 
     if (loading || authLoading) return <Spinner />;
     if (error) return <div className="text-center bg-red-100 text-red-700 p-8 rounded-lg max-w-md mx-auto">{error}</div>;
-    if (!event) return null; // Render nothing if the event is not found and there is no error
+    if (!event) return null;
 
     const isSoldOut = event.ticketsRemaining === 0;
     const formattedDate = new Date(event.date).toLocaleDateString('en-US', {
@@ -108,12 +98,12 @@ const EventDetailsPage = () => {
     return (
         <div className="bg-white rounded-lg shadow-2xl max-w-5xl mx-auto overflow-hidden">
             <div className="md:flex">
-                {/* Left Side: Image */}
+
                 <div className="md:w-1/2">
                     <img className="h-64 w-full object-cover md:h-full" src={event.imageUrl} alt={event.name} />
                 </div>
 
-                {/* Right Side: Details and Actions */}
+
                 <div className="p-8 md:w-1/2 flex flex-col justify-between">
                     <div>
                         <div className="uppercase tracking-wide text-sm text-indigo-500 font-semibold">{event.location}</div>
@@ -140,7 +130,7 @@ const EventDetailsPage = () => {
                                             const val = e.target.value;
                                             if (val === '') { setQuantity(''); return; }
                                             const num = parseInt(val, 10);
-                                            // This validation ensures the quantity is always between 1 and the number of tickets remaining.
+
                                             setQuantity(Math.max(1, Math.min(event.ticketsRemaining, num || 1)));
                                         }}
                                         min="1" max={event?.ticketsRemaining} placeholder="1"
